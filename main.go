@@ -1,34 +1,41 @@
 package main
 
 import(
-	"github.com/kataras/iris"
 	"fmt"
-	"strings"
+	"github.com/valyala/fasthttp"
+	"log"
+	"flag"
 )
 
-const port = "8080"
+const port = ":8080"
 
-func getPlayersFromTeam(ctx *iris.Context){
-	team := strings.Split(ctx.PathString(),"/")[3]
-
-	ctx.JSON(iris.StatusOK, map[string]string{"team": team})
+func getPlayersFromTeam(){
+	// ctx.JSON(iris.StatusOK, map[string]string{"team": team})
 }
+
+var (
+	compress           = flag.Bool("compress", false, "Enables transparent response compression if set to true")
+	byteRange          = flag.Bool("byteRange", false, "Enables byte range requests if set to true")
+	dir                = flag.String("dir", "./public", "Directory to serve static files from")
+	generateIndexPages = flag.Bool("generateIndexPages", true, "Whether to generate directory index pages")
+)
 
 func main(){
 	fmt.Println("Server started listening to port " + port)
 	connectToPostgres()
 
-	static := iris.New()
-	static.StaticWeb("/", "./public", 0)
-
-	api := iris.New()
-	apiParty := api.Party("/api")
-	{
-		apiParty.Get("/team/:team", getPlayersFromTeam)
+	fs := &fasthttp.FS{
+		Root: *dir,
+		IndexNames: []string{"index.html"},
+		GenerateIndexPages: *generateIndexPages,
+		Compress: *compress,
+		AcceptByteRange: *byteRange,
 	}
 
+	// Create request handler for serving static files.
+	h := fs.NewRequestHandler()
 
-	go static.Listen(":8081")
-	api.Listen(":8080")
-	
+	if err := fasthttp.ListenAndServe(port, h); err != nil {
+		log.Fatalf("error in ListenAndServe: %s", err)
+	}
 }
