@@ -12,6 +12,13 @@ type Config struct{
 	dbname string
 }
 
+type Game struct{
+	game_id string
+	team1 string
+	team2 string
+	date string
+}
+
 var postgres Postgresql
 
 func readConfig() Config{
@@ -33,3 +40,10 @@ func connectToPostgres() {
 	postgres.connect(createPostgresqlString(readConfig()))
 }
 
+func getPlayersFromTeamPostgres(teamName string){
+	_ = postgres.getPlayersFrom(teamName)
+}
+
+func getGamesFromTeams(team1 string, team2 string) []*Game{
+	rows = postgres.getGameIdFromTeams(team1, team2)
+}
