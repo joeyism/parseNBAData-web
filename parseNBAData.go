@@ -1,15 +1,16 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
+	"log"
+	"github.com/BurntSushi/toml"
+	"database/sql"
 )
 
 type Config struct{
-	username string
-	password string
-	dbname string
+	Username string
+	Password string
+	Database string
 }
 
 type Game struct{
@@ -22,18 +23,17 @@ type Game struct{
 var postgres Postgresql
 
 func readConfig() Config{
-	file, _ := os.Open("config.json")
-	decoder := json.NewDecoder(file)
-	config := Config{}
-	err := decoder.Decode(&config)
-	if err != nil {
-  		fmt.Println("error:", err)
+	var config Config
+	if _, err := toml.DecodeFile("config.toml", &config); err != nil {
+		log.Fatal(err)
 	}
 	return config
 }
 
 func createPostgresqlString(config Config) string{
-	return "user="+config.username + " password="+config.password + " dbname="+config.dbname+" sslmode=verify-full"
+	requestString := "user='"+config.Username + "' password='"+config.Password + "' dbname='"+config.Database+"' sslmode=disable"
+	fmt.Println(requestString)
+	return requestString
 }
 
 func connectToPostgres() {
@@ -44,6 +44,19 @@ func getPlayersFromTeamPostgres(teamName string){
 	_ = postgres.getPlayersFrom(teamName)
 }
 
-func getGamesFromTeams(team1 string, team2 string) []*Game{
-	rows = postgres.getGameIdFromTeams(team1, team2)
+func extractGameIdsFromRows(rows *sql.Rows) []string{
+	var gameIds []string
+	defer rows.Close()
+	for rows.Next(){
+		var matchup string
+		err := rows.Scan(&matchup)
+		showError(err)	
+		gameIds = append(gameIds, matchup)
+	}
+	return gameIds
+}
+
+func getGamesFromTeams(team1 string, team2 string) []string{
+	rows := postgres.getGameIdFromTeams(team1, team2)
+	return extractGameIdsFromRows(rows)
 }

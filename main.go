@@ -60,9 +60,9 @@ func GetMatchupsBetweenTeams(ctx *fasthttp.RequestCtx, params fasthttprouter.Par
 	url := strings.Split(string(ctx.Path()), "/")
 	team1 := url[2]
 	team2 := url[4]
-	log.Print(team1)
-	log.Print(team2)
-
+	gameIds := getGamesFromTeams(team1, team2)
+	ctx.SetContentType("application/json")
+	fmt.Fprintf(ctx, convertArrayToString(gameIds))
 }
 
 func main(){
